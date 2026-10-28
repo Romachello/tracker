@@ -14,7 +14,9 @@
       --line: #303640;
       --green: #58d6a2;
       --yellow: #f2c94c;
+      --orange: #e8941f;
       --red: #ff7185;
+      --red-deep: #c0392b;
       --blue: #82aaff;
     }
 
@@ -27,11 +29,7 @@
       font: 15px system-ui, -apple-system, "Segoe UI", sans-serif;
     }
 
-    main {
-      max-width: 760px;
-      margin: auto;
-      padding: 20px 14px 40px;
-    }
+    main { max-width: 760px; margin: auto; padding: 20px 14px 40px; }
 
     h1 { font-size: 25px; margin: 4px 0; }
     .sub, .hint { color: var(--muted); }
@@ -46,17 +44,13 @@
     }
 
     .week-head, .month-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
+      display: flex; justify-content: space-between;
+      align-items: center; gap: 12px;
     }
 
     .stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-top: 13px;
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 10px; margin-top: 13px;
     }
 
     .stat { background: #11151a; border-radius: 12px; padding: 11px; }
@@ -65,147 +59,148 @@
 
     button, input { font: inherit; }
     button {
-      color: inherit;
-      background: #252b34;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 8px 11px;
-      cursor: pointer;
+      color: inherit; background: #252b34;
+      border: 1px solid var(--line); border-radius: 10px;
+      padding: 8px 11px; cursor: pointer;
     }
     button:hover { background: #303844; }
 
     .month-title { font-weight: 700; }
 
     .calendar {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 7px;
-      margin-top: 12px;
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 7px; margin-top: 12px;
     }
 
     .weekday { text-align: center; color: var(--muted); font-size: 12px; }
 
     .day {
-      min-height: 66px;
-      padding: 7px;
-      text-align: left;
-      border-radius: 11px;
-      background: #11151a;
-      border: 1px solid transparent;
-      transition: box-shadow .15s ease;
+      position: relative;
+      min-height: 66px; padding: 7px; text-align: left;
+      border-radius: 11px; background: #11151a;
+      border: 2px solid transparent;
+      transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
     }
 
     .day.outside { opacity: .35; }
-    .day.selected { outline: 2px solid var(--blue); }
-    .day.today { border-color: var(--green); }
+    .day.selected { outline: 2px solid var(--blue); outline-offset: 2px; }
 
-    /* Красная рамка — курение отмечено */
-    .day.day-smoked {
-      border: 2px solid var(--red);
-      box-shadow: 0 0 0 1px rgba(255, 113, 133, .3);
+    /* «Сегодня» — синяя точка в углу, чтобы не конфликтовать с фонами */
+    .day.today::before {
+      content: '';
+      position: absolute; top: 6px; right: 6px;
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--blue);
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, .45);
     }
-    /* Зелёная рамка — 3+ хороших привычек и не курил */
+
+    /* 5+ хороших → вся ячейка зелёная */
     .day.day-good {
-      border: 2px solid var(--green);
-      box-shadow: 0 0 0 1px rgba(88, 214, 162, .3);
+      background: var(--green);
+      border-color: var(--green);
+      color: #04120c;
     }
+    .day.day-good .day-num { color: #04120c; }
+
+    /* 3–4 хороших → вся ячейка оранжевая (даже если курил) */
+    .day.day-ok {
+      background: var(--orange);
+      border-color: var(--orange);
+      color: #1a0e00;
+    }
+    .day.day-ok .day-num { color: #1a0e00; }
+
+    /* Курение → обод вокруг дня, отдельный (кирпичный) оттенок красного */
+    .day.day-smoked {
+      border-color: var(--red-deep);
+      box-shadow: 0 0 0 2px rgba(192, 57, 43, .25);
+    }
+
+    /* Точки привычек — контур для читаемости на цветных фонах */
+    .day.day-good .dot,
+    .day.day-ok .dot { box-shadow: 0 0 0 1px rgba(0, 0, 0, .25); }
 
     .day-num { font-weight: 700; }
 
-    .dots {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 3px;
-      margin-top: 7px;
-    }
+    .dots { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 7px; }
 
     .dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
+      width: 7px; height: 7px; border-radius: 50%;
       background: #49515c;
     }
 
     .section-title { font-size: 18px; margin: 0 0 4px; }
 
-    .day-status {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin: 8px 0 6px;
-    }
+    .day-status { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 6px; }
 
     .badge {
-      font-size: 12px;
-      padding: 4px 8px;
-      border-radius: 8px;
-      background: #11151a;
-      border: 1px solid var(--line);
+      font-size: 12px; padding: 4px 8px; border-radius: 8px;
+      background: #11151a; border: 1px solid var(--line);
       color: var(--muted);
     }
-    .badge.red { color: var(--red); border-color: rgba(255, 113, 133, .4); }
-    .badge.green { color: var(--green); border-color: rgba(88, 214, 162, .4); }
-    .badge.yellow { color: var(--yellow); border-color: rgba(242, 201, 76, .4); }
+    .badge.red    { color: var(--red-deep); border-color: rgba(192, 57, 43, .45); }
+    .badge.green  { color: var(--green);    border-color: rgba(88, 214, 162, .4); }
+    .badge.orange { color: var(--orange);   border-color: rgba(232, 148, 31, .45); }
+    .badge.yellow { color: var(--yellow);   border-color: rgba(242, 201, 76, .4); }
 
     .habit {
       position: relative;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      padding: 11px 0 11px 14px;
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 12px; padding: 11px 0 11px 14px;
       border-bottom: 1px solid var(--line);
     }
     .habit:last-child { border-bottom: 0; }
 
-    /* Уникальный цветной маркер слева у каждой привычки */
     .habit::before {
       content: '';
-      position: absolute;
-      left: 0;
-      top: 12px;
-      bottom: 12px;
-      width: 3px;
-      border-radius: 2px;
+      position: absolute; left: 0; top: 12px; bottom: 12px;
+      width: 3px; border-radius: 2px;
       background: var(--habit-color, var(--line));
     }
 
     .habit small { display: block; color: var(--muted); margin-top: 2px; }
 
     .check {
-      width: 28px;
-      height: 28px;
-      min-width: 28px;
-      padding: 0;
-      border-radius: 9px;
-      font-size: 17px;
-      background: #252b34;
-      border: 1px solid var(--line);
+      width: 34px; height: 34px; min-width: 34px; padding: 0;
+      border-radius: 10px; font-size: 18px;
+      background: #252b34; border: 1px solid var(--line);
       color: inherit;
+      display: flex; align-items: center; justify-content: center;
+      line-height: 1; opacity: .55;
+      transition: background .15s ease, border-color .15s ease, opacity .15s ease;
     }
 
-    /* Хорошие привычки — при отметке окрашиваются в свой цвет */
+    .check.on { opacity: 1; }
+
+    /* Хорошая привычка отмечена — свой цвет */
     .check.check-good.on {
-      color: #061710;
       background: var(--habit-color, var(--green));
       border-color: var(--habit-color, var(--green));
     }
 
-    /* Плохие привычки — «не сделано» = хорошо (зелёный фон) */
+    /* Плохая привычка НЕ отмечена = хорошо */
     .check.check-bad {
       background: rgba(88, 214, 162, .12);
       border-color: rgba(88, 214, 162, .35);
-      color: var(--green);
+      opacity: .85;
     }
 
-    /* Плохие привычки — «сделано» = плохо (красный фон с ✕) */
+    /* Плохая привычка отмечена = плохо */
     .check.check-bad.on {
       background: var(--red);
       border-color: var(--red);
-      color: #1a0407;
     }
 
     .footer { color: var(--muted); font-size: 12px; margin-top: 12px; }
+
+    .legend {
+      display: flex; flex-wrap: wrap; gap: 12px;
+      margin-top: 10px; font-size: 12px; color: var(--muted);
+    }
+    .legend .swatch {
+      display: inline-block; width: 12px; height: 12px;
+      border-radius: 3px; margin-right: 4px; vertical-align: -2px;
+    }
 
     @media (max-width: 420px) {
       main { padding: 14px 10px 30px; }
@@ -213,6 +208,7 @@
       .day { min-height: 56px; padding: 5px; }
       .stats { gap: 6px; }
       .stat { padding: 9px; }
+      .check { width: 30px; height: 30px; min-width: 30px; font-size: 16px; }
     }
   </style>
 </head>
@@ -244,16 +240,17 @@
         <button id="nextMonth" type="button" aria-label="Следующий месяц">›</button>
       </div>
       <div class="calendar" id="calendar"></div>
-      <div class="hint" style="margin-top:10px">
-        <span style="color:var(--red)">━</span> курение ·
-        <span style="color:var(--green)">━</span> 3+ хороших привычек без курения
+      <div class="legend">
+        <span><span class="swatch" style="background:var(--green)"></span>5+ хороших — зелёный день</span>
+        <span><span class="swatch" style="background:var(--orange)"></span>3+ хороших — оранжевый день</span>
+        <span><span class="swatch" style="background:transparent;border:2px solid var(--red-deep)"></span>курение — красный обод</span>
       </div>
     </section>
 
     <section class="card">
       <h2 class="section-title" id="selectedDate"></h2>
       <div class="day-status" id="dayStatus"></div>
-      <div class="hint">Нажмите на кнопку, чтобы отметить привычку.</div>
+      <div class="hint">Нажмите на эмодзи-кнопку, чтобы отметить привычку.</div>
       <div id="habits"></div>
       <div class="footer">Для смены дня выберите дату в календаре.</div>
     </section>
@@ -262,15 +259,17 @@
   <script>
     (() => {
       const habits = [
-        { id: "charge",  name: "Утренняя зарядка",                 note: "Сделана ли зарядка утром?",          good: true,  color: "#58d6a2" },
-        { id: "stretch", name: "Вечерняя растяжка",                note: "Отметьте после растяжки.",           good: true,  color: "#82aaff" },
-        { id: "bar1",    name: "Подтягивания на работе — 1-й раз", note: "Первая отметка за рабочий день.",    good: true,  color: "#c792ea" },
-        { id: "bar2",    name: "Подтягивания на работе — 2-й раз", note: "Вторая отметка за рабочий день.",    good: true,  color: "#b39ddb" },
-        { id: "fasting", name: "Интервальное голодание",           note: "План: с 20:00 до 14:00.",            good: true,  color: "#4dd0e1" },
-        { id: "workout", name: "Тренировка",                       note: "Не более одной тренировки в день.",  good: true,  workout: true, color: "#f2c94c" },
-        { id: "smoking", name: "Курение",                          note: "Отметьте, если курили — день красный.", bad: true, color: "#ff7185" },
-        { id: "sleep",   name: "Режим сна",                        note: "Лёг вовремя?",                       good: true,  color: "#a5b4fc" },
-        { id: "alcohol", name: "Алкоголь",                         note: "Отметьте, если употребляли.",        bad: true,   color: "#ff8a65" }
+        { id: "charge",   name: "Утренняя зарядка",                 note: "Сделана ли зарядка утром?",             icon: "🏋️", good: true,  color: "#58d6a2" },
+        { id: "stretch",  name: "Вечерняя растяжка",                note: "Отметьте после растяжки.",              icon: "🧘", good: true,  color: "#82aaff" },
+        { id: "bar1",     name: "Подтягивания на работе — 1-й раз", note: "Первая отметка за рабочий день.",       icon: "💪", good: true,  color: "#c792ea" },
+        { id: "bar2",     name: "Подтягивания на работе — 2-й раз", note: "Вторая отметка за рабочий день.",       icon: "💪", good: true,  color: "#b39ddb" },
+        { id: "fasting",  name: "Интервальное голодание",           note: "План: с 20:00 до 14:00.",               icon: "🛑", good: true,  color: "#4dd0e1" },
+        { id: "workout",  name: "Тренировка",                       note: "Не более одной тренировки в день.",     icon: "🥊", good: true,  workout: true, color: "#f2c94c" },
+        { id: "water",    name: "Норма воды",                       note: "Выпил достаточно воды?",                icon: "💧", good: true,  color: "#4fc3f7" },
+        { id: "vitamins", name: "Приём витаминов",                  note: "Принял витамины?",                      icon: "💊", good: true,  color: "#ffb74d" },
+        { id: "sleep",    name: "Сон до 00:00",                     note: "Лёг спать до полуночи?",                icon: "🌙", good: true,  color: "#a5b4fc" },
+        { id: "smoking",  name: "Курение",                          note: "Отметьте, если курили — красный обод.", icon: "🚬", bad: true,   color: "#ff7185" },
+        { id: "alcohol",  name: "Алкоголь",                         note: "Отметьте, если употребляли.",           icon: "🍷", bad: true,   color: "#ff8a65" }
       ];
 
       const key = "habit-tracker-v1";
@@ -305,14 +304,19 @@
         return x;
       }
 
-      // Сколько хороших привычек отмечено
       const goodCount = rec => habits.filter(h => h.good && rec[h.id]).length;
 
-      // Класс для ячейки дня
-      function dayClass(rec) {
-        if (rec.smoking) return "day-smoked";        // красная рамка
-        if (goodCount(rec) >= 3) return "day-good";  // зелёная рамка
-        return "";
+      // Определяем классы ячейки:
+      //   5+ хороших → зелёная заливка
+      //   3–4 хороших → оранжевая заливка (даже если курил)
+      //   курение → красный обод (поверх любого фона)
+      function dayClasses(rec) {
+        const classes = [];
+        const gc = goodCount(rec);
+        if (gc >= 5) classes.push("day-good");
+        else if (gc >= 3) classes.push("day-ok");
+        if (rec.smoking) classes.push("day-smoked");
+        return classes;
       }
 
       function renderCalendar() {
@@ -340,15 +344,13 @@
           if (d.getMonth() !== view.getMonth()) el.classList.add("outside");
           if (k === selected) el.classList.add("selected");
           if (k === dateKey(today)) el.classList.add("today");
-          const dc = dayClass(record);
-          if (dc) el.classList.add(dc);
+          dayClasses(record).forEach(c => el.classList.add(c));
 
           const num = document.createElement("span");
           num.className = "day-num";
           num.textContent = d.getDate();
           el.appendChild(num);
 
-          // Точки с уникальным цветом каждой привычки
           const dots = document.createElement("div");
           dots.className = "dots";
           habits.forEach(h => {
@@ -356,7 +358,7 @@
               const dot = document.createElement("i");
               dot.className = "dot";
               dot.style.background = h.color;
-              dot.title = h.name;
+              dot.title = `${h.icon} ${h.name}`;
               dots.appendChild(dot);
             }
           });
@@ -374,19 +376,13 @@
         const el = document.getElementById("dayStatus");
         el.innerHTML = "";
         const items = [];
-
-        if (rec.smoking) {
-          items.push({ t: "🚬 Курение — красный день", c: "red" });
-        }
-
         const gc = goodCount(rec);
-        if (gc > 0) {
-          const isGreen = gc >= 3 && !rec.smoking;
-          items.push({
-            t: `✓ ${gc} хороших привычек${isGreen ? " — зелёный день" : ""}`,
-            c: isGreen ? "green" : "yellow"
-          });
-        }
+
+        if (gc >= 5) items.push({ t: `🌿 Отличный день: ${gc} хороших привычек`, c: "green" });
+        else if (gc >= 3) items.push({ t: `🔥 ${gc} хороших привычек — оранжевый день`, c: "orange" });
+        else if (gc > 0) items.push({ t: `${gc} хороших привычек`, c: "yellow" });
+
+        if (rec.smoking) items.push({ t: "🚬 Курение — красный обод", c: "red" });
 
         if (!items.length) items.push({ t: "Пока пусто", c: "" });
 
@@ -422,14 +418,12 @@
           button.className = `check ${kind}${record[h.id] ? " on" : ""}`;
           button.setAttribute("aria-label",
             `${h.name}: ${record[h.id] ? "отмечено" : "не отмечено"}`);
-
-          // ✓ для хороших, ✕ для плохих, пусто — если не отмечено
-          button.textContent = record[h.id] ? (h.bad ? "✕" : "✓") : "";
+          button.title = `${h.icon} ${h.name}`;
+          button.textContent = h.icon;   // эмодзи-маркер вместо ✓ / ✕
 
           button.addEventListener("click", () => {
             data[selected] = data[selected] || {};
 
-            // Лимит 3 тренировок в неделю
             if (h.workout && !data[selected].workout) {
               const start = weekStart(parseDate(selected));
               let count = 0;
