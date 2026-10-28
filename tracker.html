@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="ru">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Трекер привычек</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101216;
+      --card: #191d23;
+      --muted: #969eaa;
+      --line: #303640;
+      --green: #58d6a2;
+      --yellow: #f2c94c;
+      --red: #ff7185;
+      --blue: #82aaff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: #f2f4f7;
+      font: 15px system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    main {
+      max-width: 760px;
+      margin: auto;
+      padding: 20px 14px 40px;
+    }
+
+    h1 { font-size: 25px; margin: 4px 0; }
+    .sub, .hint { color: var(--muted); }
+    .sub { margin-bottom: 18px; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 15px;
+      margin: 12px 0;
+    }
+
+    .week-head, .month-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 13px;
+    }
+
+    .stat { background: #11151a; border-radius: 12px; padding: 11px; }
+    .stat strong { display: block; font-size: 20px; margin-top: 3px; }
+    .stat span { color: var(--muted); font-size: 12px; }
+
+    button, input { font: inherit; }
+    button {
+      color: inherit;
+      background: #252b34;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 11px;
+      cursor: pointer;
+    }
+    button:hover { background: #303844; }
+
+    .month-title { font-weight: 700; }
+
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 7px;
+      margin-top: 12px;
+    }
+
+    .weekday { text-align: center; color: var(--muted); font-size: 12px; }
+
+    .day {
+      min-height: 66px;
+      padding: 7px;
+      text-align: left;
+      border-radius: 11px;
+      background: #11151a;
+      border: 1px solid transparent;
+      transition: box-shadow .15s ease;
+    }
+
+    .day.outside { opacity: .35; }
+    .day.selected { outline: 2px solid var(--blue); }
+    .day.today { border-color: var(--green); }
+
+    /* Красная рамка — курение отмечено */
+    .day.day-smoked {
+      border: 2px solid var(--red);
+      box-shadow: 0 0 0 1px rgba(255, 113, 133, .3);
+    }
+    /* Зелёная рамка — 3+ хороших привычек и не курил */
+    .day.day-good {
+      border: 2px solid var(--green);
+      box-shadow: 0 0 0 1px rgba(88, 214, 162, .3);
+    }
+
+    .day-num { font-weight: 700; }
+
+    .dots {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      margin-top: 7px;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #49515c;
+    }
+
+    .section-title { font-size: 18px; margin: 0 0 4px; }
+
+    .day-status {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 8px 0 6px;
+    }
+
+    .badge {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 8px;
+      background: #11151a;
+      border: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .badge.red { color: var(--red); border-color: rgba(255, 113, 133, .4); }
+    .badge.green { color: var(--green); border-color: rgba(88, 214, 162, .4); }
+    .badge.yellow { color: var(--yellow); border-color: rgba(242, 201, 76, .4); }
+
+    .habit {
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 0 11px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    .habit:last-child { border-bottom: 0; }
+
+    /* Уникальный цветной маркер слева у каждой привычки */
+    .habit::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 12px;
+      bottom: 12px;
+      width: 3px;
+      border-radius: 2px;
+      background: var(--habit-color, var(--line));
+    }
+
+    .habit small { display: block; color: var(--muted); margin-top: 2px; }
+
+    .check {
+      width: 28px;
+      height: 28px;
+      min-width: 28px;
+      padding: 0;
+      border-radius: 9px;
+      font-size: 17px;
+      background: #252b34;
+      border: 1px solid var(--line);
+      color: inherit;
+    }
+
+    /* Хорошие привычки — при отметке окрашиваются в свой цвет */
+    .check.check-good.on {
+      color: #061710;
+      background: var(--habit-color, var(--green));
+      border-color: var(--habit-color, var(--green));
+    }
+
+    /* Плохие привычки — «не сделано» = хорошо (зелёный фон) */
+    .check.check-bad {
+      background: rgba(88, 214, 162, .12);
+      border-color: rgba(88, 214, 162, .35);
+      color: var(--green);
+    }
+
+    /* Плохие привычки — «сделано» = плохо (красный фон с ✕) */
+    .check.check-bad.on {
+      background: var(--red);
+      border-color: var(--red);
+      color: #1a0407;
+    }
+
+    .footer { color: var(--muted); font-size: 12px; margin-top: 12px; }
+
+    @media (max-width: 420px) {
+      main { padding: 14px 10px 30px; }
+      .card { padding: 12px; }
+      .day { min-height: 56px; padding: 5px; }
+      .stats { gap: 6px; }
+      .stat { padding: 9px; }
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <h1>Трекер привычек</h1>
+    <div class="sub">Отмечайте привычки каждый день — прогресс сохранится на этом устройстве.</div>
+
+    <section class="card">
+      <div class="week-head">
+        <div>
+          <strong id="weekLabel"></strong>
+          <div class="hint" id="weekHint"></div>
+        </div>
+        <button id="todayBtn" type="button">Сегодня</button>
+      </div>
+      <div class="stats">
+        <div class="stat"><span>Тренировки за неделю</span><strong id="workoutCount">0 / 3</strong></div>
+        <div class="stat"><span>Отмечено сегодня</span><strong id="todayCount">0</strong></div>
+        <div class="stat"><span>Интервальное голодание</span><strong>20:00–14:00</strong></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="month-head">
+        <button id="prevMonth" type="button" aria-label="Предыдущий месяц">‹</button>
+        <div class="month-title" id="monthTitle"></div>
+        <button id="nextMonth" type="button" aria-label="Следующий месяц">›</button>
+      </div>
+      <div class="calendar" id="calendar"></div>
+      <div class="hint" style="margin-top:10px">
+        <span style="color:var(--red)">━</span> курение ·
+        <span style="color:var(--green)">━</span> 3+ хороших привычек без курения
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title" id="selectedDate"></h2>
+      <div class="day-status" id="dayStatus"></div>
+      <div class="hint">Нажмите на кнопку, чтобы отметить привычку.</div>
+      <div id="habits"></div>
+      <div class="footer">Для смены дня выберите дату в календаре.</div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const habits = [
+        { id: "charge",  name: "Утренняя зарядка",                 note: "Сделана ли зарядка утром?",          good: true,  color: "#58d6a2" },
+        { id: "stretch", name: "Вечерняя растяжка",                note: "Отметьте после растяжки.",           good: true,  color: "#82aaff" },
+        { id: "bar1",    name: "Подтягивания на работе — 1-й раз", note: "Первая отметка за рабочий день.",    good: true,  color: "#c792ea" },
+        { id: "bar2",    name: "Подтягивания на работе — 2-й раз", note: "Вторая отметка за рабочий день.",    good: true,  color: "#b39ddb" },
+        { id: "fasting", name: "Интервальное голодание",           note: "План: с 20:00 до 14:00.",            good: true,  color: "#4dd0e1" },
+        { id: "workout", name: "Тренировка",                       note: "Не более одной тренировки в день.",  good: true,  workout: true, color: "#f2c94c" },
+        { id: "smoking", name: "Курение",                          note: "Отметьте, если курили — день красный.", bad: true, color: "#ff7185" },
+        { id: "sleep",   name: "Режим сна",                        note: "Лёг вовремя?",                       good: true,  color: "#a5b4fc" },
+        { id: "alcohol", name: "Алкоголь",                         note: "Отметьте, если употребляли.",        bad: true,   color: "#ff8a65" }
+      ];
+
+      const key = "habit-tracker-v1";
+      let data = {};
+      try {
+        const raw = JSON.parse(localStorage.getItem(key) || "{}");
+        if (raw && typeof raw === "object" && !Array.isArray(raw)) data = raw;
+      } catch (_) { }
+
+      const pad = n => String(n).padStart(2, "0");
+      const dateKey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      const today = new Date();
+      let selected = dateKey(today);
+      let view = new Date(today.getFullYear(), today.getMonth(), 1);
+
+      const parseDate = s => {
+        const [y, m, d] = s.split("-").map(Number);
+        return new Date(y, m - 1, d);
+      };
+      const save = () => {
+        try { localStorage.setItem(key, JSON.stringify(data)); } catch (_) { }
+      };
+
+      const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+        "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+      const weekdays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+      function weekStart(d) {
+        const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        const offset = (x.getDay() + 6) % 7;
+        x.setDate(x.getDate() - offset);
+        return x;
+      }
+
+      // Сколько хороших привычек отмечено
+      const goodCount = rec => habits.filter(h => h.good && rec[h.id]).length;
+
+      // Класс для ячейки дня
+      function dayClass(rec) {
+        if (rec.smoking) return "day-smoked";        // красная рамка
+        if (goodCount(rec) >= 3) return "day-good";  // зелёная рамка
+        return "";
+      }
+
+      function renderCalendar() {
+        document.getElementById("monthTitle").textContent =
+          `${monthNames[view.getMonth()]} ${view.getFullYear()}`;
+        const cal = document.getElementById("calendar");
+        cal.innerHTML = "";
+        weekdays.forEach(day => {
+          const el = document.createElement("div");
+          el.className = "weekday";
+          el.textContent = day;
+          cal.appendChild(el);
+        });
+
+        const first = new Date(view.getFullYear(), view.getMonth(), 1);
+        const start = weekStart(first);
+        for (let i = 0; i < 42; i++) {
+          const d = new Date(start);
+          d.setDate(start.getDate() + i);
+          const k = dateKey(d);
+          const record = data[k] || {};
+          const el = document.createElement("button");
+          el.type = "button";
+          el.className = "day";
+          if (d.getMonth() !== view.getMonth()) el.classList.add("outside");
+          if (k === selected) el.classList.add("selected");
+          if (k === dateKey(today)) el.classList.add("today");
+          const dc = dayClass(record);
+          if (dc) el.classList.add(dc);
+
+          const num = document.createElement("span");
+          num.className = "day-num";
+          num.textContent = d.getDate();
+          el.appendChild(num);
+
+          // Точки с уникальным цветом каждой привычки
+          const dots = document.createElement("div");
+          dots.className = "dots";
+          habits.forEach(h => {
+            if (record[h.id]) {
+              const dot = document.createElement("i");
+              dot.className = "dot";
+              dot.style.background = h.color;
+              dot.title = h.name;
+              dots.appendChild(dot);
+            }
+          });
+          el.appendChild(dots);
+          el.addEventListener("click", () => {
+            selected = k;
+            view = new Date(d.getFullYear(), d.getMonth(), 1);
+            render();
+          });
+          cal.appendChild(el);
+        }
+      }
+
+      function renderDayStatus(rec) {
+        const el = document.getElementById("dayStatus");
+        el.innerHTML = "";
+        const items = [];
+
+        if (rec.smoking) {
+          items.push({ t: "🚬 Курение — красный день", c: "red" });
+        }
+
+        const gc = goodCount(rec);
+        if (gc > 0) {
+          const isGreen = gc >= 3 && !rec.smoking;
+          items.push({
+            t: `✓ ${gc} хороших привычек${isGreen ? " — зелёный день" : ""}`,
+            c: isGreen ? "green" : "yellow"
+          });
+        }
+
+        if (!items.length) items.push({ t: "Пока пусто", c: "" });
+
+        items.forEach(b => {
+          const span = document.createElement("span");
+          span.className = "badge " + b.c;
+          span.textContent = b.t;
+          el.appendChild(span);
+        });
+      }
+
+      function renderHabits() {
+        const record = data[selected] || {};
+        const container = document.getElementById("habits");
+        container.innerHTML = "";
+        const d = parseDate(selected);
+        document.getElementById("selectedDate").textContent =
+          `${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+        renderDayStatus(record);
+
+        habits.forEach(h => {
+          const row = document.createElement("div");
+          row.className = "habit";
+          row.style.setProperty("--habit-color", h.color);
+
+          const text = document.createElement("div");
+          text.innerHTML = `<strong>${h.name}</strong><small>${h.note}</small>`;
+
+          const button = document.createElement("button");
+          button.type = "button";
+          button.style.setProperty("--habit-color", h.color);
+          const kind = h.bad ? "check-bad" : "check-good";
+          button.className = `check ${kind}${record[h.id] ? " on" : ""}`;
+          button.setAttribute("aria-label",
+            `${h.name}: ${record[h.id] ? "отмечено" : "не отмечено"}`);
+
+          // ✓ для хороших, ✕ для плохих, пусто — если не отмечено
+          button.textContent = record[h.id] ? (h.bad ? "✕" : "✓") : "";
+
+          button.addEventListener("click", () => {
+            data[selected] = data[selected] || {};
+
+            // Лимит 3 тренировок в неделю
+            if (h.workout && !data[selected].workout) {
+              const start = weekStart(parseDate(selected));
+              let count = 0;
+              for (let i = 0; i < 7; i++) {
+                const day = new Date(start);
+                day.setDate(start.getDate() + i);
+                if (data[dateKey(day)]?.workout) count++;
+              }
+              if (count >= 3) {
+                alert("На этой неделе уже отмечены 3 тренировки.");
+                return;
+              }
+            }
+
+            data[selected][h.id] = !data[selected][h.id];
+            save();
+            render();
+          });
+
+          row.append(text, button);
+          container.appendChild(row);
+        });
+      }
+
+      function renderSummary() {
+        const start = weekStart(parseDate(selected));
+        let workouts = 0;
+        for (let i = 0; i < 7; i++) {
+          const day = new Date(start);
+          day.setDate(start.getDate() + i);
+          if (data[dateKey(day)]?.workout) workouts++;
+        }
+        const todayRecord = data[dateKey(today)] || {};
+        const checkedToday = habits.filter(h => todayRecord[h.id]).length;
+        const end = new Date(start);
+        end.setDate(start.getDate() + 6);
+        const fmt = d => `${d.getDate()} ${monthNames[d.getMonth()].slice(0, 3).toLowerCase()}`;
+        document.getElementById("weekLabel").textContent = `Неделя: ${fmt(start)} — ${fmt(end)}`;
+        document.getElementById("weekHint").textContent = "Цель — 3 тренировки в неделю";
+        document.getElementById("workoutCount").textContent = `${workouts} / 3`;
+        document.getElementById("todayCount").textContent = `${checkedToday} / ${habits.length}`;
+      }
+
+      function render() {
+        renderCalendar();
+        renderHabits();
+        renderSummary();
+      }
+
+      document.getElementById("prevMonth").addEventListener("click", () => {
+        view = new Date(view.getFullYear(), view.getMonth() - 1, 1);
+        render();
+      });
+      document.getElementById("nextMonth").addEventListener("click", () => {
+        view = new Date(view.getFullYear(), view.getMonth() + 1, 1);
+        render();
+      });
+      document.getElementById("todayBtn").addEventListener("click", () => {
+        selected = dateKey(today);
+        view = new Date(today.getFullYear(), today.getMonth(), 1);
+        render();
+      });
+
+      render();
+    })();
+  </script>
+</body>
+
+</html>
