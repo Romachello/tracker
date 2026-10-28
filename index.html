@@ -85,7 +85,6 @@
     .day.outside { opacity: .35; }
     .day.selected { outline: 2px solid var(--blue); outline-offset: 2px; }
 
-    /* «Сегодня» — синяя точка в углу, чтобы не конфликтовать с фонами */
     .day.today::before {
       content: '';
       position: absolute; top: 6px; right: 6px;
@@ -94,7 +93,6 @@
       box-shadow: 0 0 0 1px rgba(0, 0, 0, .45);
     }
 
-    /* 5+ хороших → вся ячейка зелёная */
     .day.day-good {
       background: var(--green);
       border-color: var(--green);
@@ -102,7 +100,6 @@
     }
     .day.day-good .day-num { color: #04120c; }
 
-    /* 3–4 хороших → вся ячейка оранжевая (даже если курил) */
     .day.day-ok {
       background: var(--orange);
       border-color: var(--orange);
@@ -110,13 +107,11 @@
     }
     .day.day-ok .day-num { color: #1a0e00; }
 
-    /* Курение → обод вокруг дня, отдельный (кирпичный) оттенок красного */
     .day.day-smoked {
       border-color: var(--red-deep);
       box-shadow: 0 0 0 2px rgba(192, 57, 43, .25);
     }
 
-    /* Точки привычек — контур для читаемости на цветных фонах */
     .day.day-good .dot,
     .day.day-ok .dot { box-shadow: 0 0 0 1px rgba(0, 0, 0, .25); }
 
@@ -172,20 +167,17 @@
 
     .check.on { opacity: 1; }
 
-    /* Хорошая привычка отмечена — свой цвет */
     .check.check-good.on {
       background: var(--habit-color, var(--green));
       border-color: var(--habit-color, var(--green));
     }
 
-    /* Плохая привычка НЕ отмечена = хорошо */
     .check.check-bad {
       background: rgba(88, 214, 162, .12);
       border-color: rgba(88, 214, 162, .35);
       opacity: .85;
     }
 
-    /* Плохая привычка отмечена = плохо */
     .check.check-bad.on {
       background: var(--red);
       border-color: var(--red);
@@ -202,6 +194,50 @@
       border-radius: 3px; margin-right: 4px; vertical-align: -2px;
     }
 
+    /* ---- График ---- */
+    .chart-wrap {
+      width: 100%;
+      overflow: hidden;
+    }
+    .chart-svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 180px;
+    }
+
+    /* ---- Баннер о хранилище ---- */
+    .storage-warn {
+      display: none;
+      background: rgba(255, 113, 133, .12);
+      border: 1px solid rgba(255, 113, 133, .4);
+      color: var(--red);
+      padding: 10px 12px;
+      border-radius: 12px;
+      margin: 12px 0;
+      font-size: 13px;
+    }
+    .storage-warn.show { display: block; }
+
+    .io-buttons {
+      display: flex; gap: 8px; margin-top: 10px;
+      font-size: 12px;
+    }
+    .io-buttons button {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+    .io-buttons label {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 10px;
+      background: #252b34;
+      border: 1px solid var(--line);
+      cursor: pointer;
+    }
+    .io-buttons label:hover { background: #303844; }
+    .io-buttons input[type="file"] { display: none; }
+
     @media (max-width: 420px) {
       main { padding: 14px 10px 30px; }
       .card { padding: 12px; }
@@ -216,7 +252,12 @@
 <body>
   <main>
     <h1>Трекер привычек</h1>
-    <div class="sub">Отмечайте привычки каждый день — прогресс сохранится на этом устройстве.</div>
+    <div class="sub">Отмечайте привычки каждый день — история сохраняется на устройстве.</div>
+
+    <div class="storage-warn" id="storageWarn">
+      ⚠️ Браузер не даёт сохранять данные (приватный режим или отключено хранилище).
+      Отметки сохранятся только до перезагрузки — сделайте экспорт, если это важно.
+    </div>
 
     <section class="card">
       <div class="week-head">
@@ -247,6 +288,30 @@
       </div>
     </section>
 
+    <!-- НОВАЯ КАРТОЧКА: график уровня жизни -->
+    <section class="card">
+      <div class="week-head">
+        <div>
+          <strong>Уровень жизни</strong>
+          <div class="hint" id="chartHint">—</div>
+        </div>
+        <div style="text-align:right">
+          <div class="hint">Средний за месяц</div>
+          <strong id="chartAvg" style="font-size:22px">—</strong>
+        </div>
+      </div>
+      <div id="chart" class="chart-wrap" style="margin-top:14px"></div>
+      <div class="hint" style="margin-top:10px;font-size:12px">
+        Уровень дня = (хорошие − 1.5 × плохие) ÷ 5 × 100%.
+        Зоны: ≥80% Отлично · ≥60% Хорошо · ≥40% Удовлетворительно · ≥20% Плохо · ниже — Неудовлетворительно.
+      </div>
+      <div class="io-buttons">
+        <button id="exportBtn" type="button">⤓ Экспорт истории</button>
+        <label for="importInput">⤒ Импорт</label>
+        <input id="importInput" type="file" accept="application/json">
+      </div>
+    </section>
+
     <section class="card">
       <h2 class="section-title" id="selectedDate"></h2>
       <div class="day-status" id="dayStatus"></div>
@@ -272,12 +337,24 @@
         { id: "alcohol",  name: "Алкоголь",                         note: "Отметьте, если употребляли.",           icon: "🍷", bad: true,   color: "#ff8a65" }
       ];
 
+      const MAX_GOOD = habits.filter(h => h.good).length;  // 9
+
       const key = "habit-tracker-v1";
       let data = {};
       try {
         const raw = JSON.parse(localStorage.getItem(key) || "{}");
         if (raw && typeof raw === "object" && !Array.isArray(raw)) data = raw;
       } catch (_) { }
+
+      // Проверка, что localStorage вообще работает
+      let storageOk = true;
+      try {
+        localStorage.setItem("__ht_test__", "1");
+        localStorage.removeItem("__ht_test__");
+      } catch (_) {
+        storageOk = false;
+        document.getElementById("storageWarn").classList.add("show");
+      }
 
       const pad = n => String(n).padStart(2, "0");
       const dateKey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -305,11 +382,25 @@
       }
 
       const goodCount = rec => habits.filter(h => h.good && rec[h.id]).length;
+      const badCount  = rec => habits.filter(h => h.bad  && rec[h.id]).length;
 
-      // Определяем классы ячейки:
-      //   5+ хороших → зелёная заливка
-      //   3–4 хороших → оранжевая заливка (даже если курил)
-      //   курение → красный обод (поверх любого фона)
+      // Уровень дня в процентах 0–100
+      function dayScore(rec) {
+        const g = goodCount(rec);
+        const b = badCount(rec);
+        if (g === 0 && b === 0) return null; // нет данных
+        const raw = (g - 1.5 * b) / 5 * 100;
+        return Math.max(0, Math.min(100, raw));
+      }
+
+      function levelFor(score) {
+        if (score >= 80) return { name: "Отлично",            color: "#58d6a2" };
+        if (score >= 60) return { name: "Хорошо",             color: "#a8e063" };
+        if (score >= 40) return { name: "Удовлетворительно",   color: "#f2c94c" };
+        if (score >= 20) return { name: "Плохо",              color: "#e8941f" };
+        return              { name: "Неудовлетворительно",     color: "#ff7185" };
+      }
+
       function dayClasses(rec) {
         const classes = [];
         const gc = goodCount(rec);
@@ -372,18 +463,122 @@
         }
       }
 
+      // === ГРАФИК УРОВНЯ ЖИЗНИ ===
+      function renderChart() {
+        const container = document.getElementById("chart");
+        const year = view.getFullYear();
+        const month = view.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        const W = 640, H = 260;
+        const padL = 44, padR = 50, padT = 14, padB = 28;
+        const cW = W - padL - padR;   // 546
+        const cH = H - padT - padB;   // 218
+
+        const yFor = score => padT + cH * (1 - score / 100);
+        const xFor = idx => daysInMonth > 1
+          ? padL + (cW / (daysInMonth - 1)) * idx
+          : padL + cW / 2;
+
+        // Собираем данные по дням
+        const days = [];
+        let totalScore = 0, scored = 0;
+        for (let day = 1; day <= daysInMonth; day++) {
+          const k = dateKey(new Date(year, month, day));
+          const rec = data[k] || {};
+          const score = dayScore(rec);
+          days.push({ day, score, good: goodCount(rec), bad: badCount(rec) });
+          if (score !== null) { totalScore += score; scored++; }
+        }
+
+        const parts = [];
+        parts.push(`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" class="chart-svg" role="img" aria-label="Уровень жизни за ${monthNames[month]} ${year}">`);
+
+        // Цветовые зоны
+        const zones = [
+          { from: 80, to: 100, color: "#58d6a2", label: "Отлично" },
+          { from: 60, to: 80,  color: "#a8e063", label: "Хорошо" },
+          { from: 40, to: 60,  color: "#f2c94c", label: "Удовл." },
+          { from: 20, to: 40,  color: "#e8941f", label: "Плохо" },
+          { from: 0,  to: 20,  color: "#ff7185", label: "Неудовл." }
+        ];
+        zones.forEach(z => {
+          const yTop = yFor(z.to);
+          const yBot = yFor(z.from);
+          parts.push(`<rect x="${padL}" y="${yTop}" width="${cW}" height="${yBot - yTop}" fill="${z.color}" opacity="0.10"/>`);
+          parts.push(`<text x="${W - padR + 4}" y="${(yTop + yBot) / 2 + 3.5}" font-size="9" fill="${z.color}" opacity="0.9">${z.label}</text>`);
+        });
+
+        // Горизонтальная сетка и подписи Y
+        [0, 20, 40, 60, 80, 100].forEach(s => {
+          const y = yFor(s);
+          parts.push(`<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#303640" stroke-width="1" ${s > 0 ? 'stroke-dasharray="2 3"' : ''}/>`);
+          parts.push(`<text x="${padL - 6}" y="${y + 3.5}" text-anchor="end" font-size="9" fill="#969eaa">${s}</text>`);
+        });
+
+        // Подписи X
+        const ticks = new Set([1, 5, 10, 15, 20, 25, daysInMonth]);
+        [...ticks].filter(d => d >= 1 && d <= daysInMonth).sort((a, b) => a - b).forEach(d => {
+          parts.push(`<text x="${xFor(d - 1)}" y="${H - padB + 14}" text-anchor="middle" font-size="9" fill="#969eaa">${d}</text>`);
+        });
+
+        // Точки с данными
+        const pts = days.filter(d => d.score !== null);
+        if (pts.length > 0) {
+          const pathD = pts.map((p, i) => {
+            const x = xFor(p.day - 1);
+            const y = yFor(p.score);
+            return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+          }).join(' ');
+          parts.push(`<path d="${pathD}" fill="none" stroke="#82aaff" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.9"/>`);
+
+          pts.forEach(p => {
+            const x = xFor(p.day - 1);
+            const y = yFor(p.score);
+            const lvl = levelFor(p.score);
+            const tip = `${p.day} ${monthNames[month]}: ${Math.round(p.score)}% — ${lvl.name} (${p.good} хор., ${p.bad} плох.)`;
+            parts.push(`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="${lvl.color}" stroke="#191d23" stroke-width="1.5"><title>${tip}</title></circle>`);
+          });
+        } else {
+          parts.push(`<text x="${W/2}" y="${H/2}" text-anchor="middle" font-size="13" fill="#969eaa">Нет данных за этот месяц</text>`);
+        }
+
+        parts.push(`</svg>`);
+        container.innerHTML = parts.join('');
+
+        // Итог по месяцу
+        const avg = scored > 0 ? totalScore / scored : null;
+        const avgEl = document.getElementById("chartAvg");
+        const hintEl = document.getElementById("chartHint");
+        if (avg === null) {
+          avgEl.textContent = "—";
+          avgEl.style.color = "var(--muted)";
+          hintEl.textContent = `${monthNames[month]} ${year} · отмеченных дней: 0`;
+        } else {
+          const lvl = levelFor(avg);
+          avgEl.textContent = `${Math.round(avg)}%`;
+          avgEl.style.color = lvl.color;
+          hintEl.textContent = `${monthNames[month]} ${year} · ${lvl.name} · отмечено дней: ${scored}`;
+        }
+      }
+
       function renderDayStatus(rec) {
         const el = document.getElementById("dayStatus");
         el.innerHTML = "";
         const items = [];
         const gc = goodCount(rec);
+        const score = dayScore(rec);
 
-        if (gc >= 5) items.push({ t: `🌿 Отличный день: ${gc} хороших привычек`, c: "green" });
-        else if (gc >= 3) items.push({ t: `🔥 ${gc} хороших привычек — оранжевый день`, c: "orange" });
-        else if (gc > 0) items.push({ t: `${gc} хороших привычек`, c: "yellow" });
-
+        if (score !== null) {
+          const lvl = levelFor(score);
+          items.push({ t: `${lvl.name}: ${Math.round(score)}%`, c: lvl.name === "Отлично" ? "green"
+            : lvl.name === "Хорошо" ? "green"
+            : lvl.name === "Удовлетворительно" ? "yellow"
+            : lvl.name === "Плохо" ? "orange" : "red" });
+        }
+        if (gc >= 5) items.push({ t: `🌿 ${gc} хороших — зелёный день`, c: "green" });
+        else if (gc >= 3) items.push({ t: `🔥 ${gc} хороших — оранжевый день`, c: "orange" });
         if (rec.smoking) items.push({ t: "🚬 Курение — красный обод", c: "red" });
-
         if (!items.length) items.push({ t: "Пока пусто", c: "" });
 
         items.forEach(b => {
@@ -419,11 +614,10 @@
           button.setAttribute("aria-label",
             `${h.name}: ${record[h.id] ? "отмечено" : "не отмечено"}`);
           button.title = `${h.icon} ${h.name}`;
-          button.textContent = h.icon;   // эмодзи-маркер вместо ✓ / ✕
+          button.textContent = h.icon;
 
           button.addEventListener("click", () => {
             data[selected] = data[selected] || {};
-
             if (h.workout && !data[selected].workout) {
               const start = weekStart(parseDate(selected));
               let count = 0;
@@ -437,7 +631,6 @@
                 return;
               }
             }
-
             data[selected][h.id] = !data[selected][h.id];
             save();
             render();
@@ -469,6 +662,7 @@
 
       function render() {
         renderCalendar();
+        renderChart();
         renderHabits();
         renderSummary();
       }
@@ -485,6 +679,41 @@
         selected = dateKey(today);
         view = new Date(today.getFullYear(), today.getMonth(), 1);
         render();
+      });
+
+      // Экспорт истории
+      document.getElementById("exportBtn").addEventListener("click", () => {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `habit-tracker-${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      });
+
+      // Импорт истории
+      document.getElementById("importInput").addEventListener("change", e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const imported = JSON.parse(reader.result);
+            if (imported && typeof imported === "object" && !Array.isArray(imported)) {
+              if (!confirm("Заменить текущую историю импортированными данными?")) return;
+              data = imported;
+              save();
+              render();
+            } else {
+              alert("Файл не похож на историю трекера.");
+            }
+          } catch (_) {
+            alert("Не удалось прочитать JSON.");
+          }
+        };
+        reader.readAsText(file);
+        e.target.value = "";
       });
 
       render();
